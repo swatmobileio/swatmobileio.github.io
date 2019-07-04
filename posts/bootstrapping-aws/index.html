@@ -1,0 +1,269 @@
+<!DOCTYPE html>
+<html class="no-js" lang="en-us">
+<head>
+	<meta charset="UTF-8">
+	<meta name="viewport" content="width=device-width, initial-scale=1">
+	<meta http-equiv="X-UA-Compatible" content="IE=edge">
+	<title>Bootstrapping AWS with Terraform - Swatmobile Engineering</title>
+	<script>(function(d,e){d[e]=d[e].replace("no-js","js");})(document.documentElement,"className");</script>
+	<meta name="description" content="">
+	<meta property="og:title" content="Bootstrapping AWS with Terraform" />
+<meta property="og:description" content="At SWAT we sometimes set up dedicated AWS Accounts based on tenant requirements. In this article we will focus on the basics we lay down when setting up a new AWS Account using Terraform. More specifically: Terraform state management and AWS Billing Alerts" />
+<meta property="og:type" content="article" />
+<meta property="og:url" content="https://engineering.swatmobile.io/posts/bootstrapping-aws/" />
+<meta property="article:published_time" content="2019-07-03T16:07:48&#43;07:00"/>
+<meta property="article:modified_time" content="2019-07-03T16:07:48&#43;07:00"/>
+
+	<meta name="twitter:card" content="summary"/>
+<meta name="twitter:title" content="Bootstrapping AWS with Terraform"/>
+<meta name="twitter:description" content="At SWAT we sometimes set up dedicated AWS Accounts based on tenant requirements. In this article we will focus on the basics we lay down when setting up a new AWS Account using Terraform. More specifically: Terraform state management and AWS Billing Alerts"/>
+
+	<link rel="dns-prefetch" href="//fonts.googleapis.com">
+	<link rel="dns-prefetch" href="//fonts.gstatic.com">
+	<link rel="stylesheet" href="https://fonts.googleapis.com/css?family=Open+Sans:400,400i,700">
+	<link rel="stylesheet" href="/css/style.css">
+	
+	<link rel="shortcut icon" href="/favicon.ico">
+		
+</head>
+<body class="body">
+	<div class="container container--outer">
+		<header class="header">
+	<div class="container">
+		<div class="logo">
+			<a class="logo__link" href="/" title="Swatmobile Engineering" rel="home">
+				<div class="logo__title">Swatmobile Engineering</div>
+				<div class="logo__tagline">A tech blog on engineering challenges and solutions from Swat team</div>
+			</a>
+		</div>
+		<div class="divider"></div>
+	</div>
+</header>
+		<div class="wrapper flex">
+			<div class="primary">
+			
+<main class="main" role="main">
+	<article class="post">
+		<header class="post__header">
+			<h1 class="post__title">Bootstrapping AWS with Terraform</h1>
+			<p class="post__lead">AWS Best practices as code</p>
+			<div class="post__meta meta">
+<div class="meta__item-datetime meta__item">
+	<svg class="meta__icon icon icon-time" width="16" height="14" viewBox="0 0 30 28"><path d="M15 0C7 0 1 6 1 14s6 14 14 14 14-6 14-14S23 0 15 0zm0 25C9 25 4 20 4 14S9 3 15 3s11 5 11 11-5 11-11 11zm1-18h-2v8.4l6.8 4.4L22 18l-6-3.8V7z"/></svg>
+	<time class="meta__text" datetime="2019-07-03T16:07:48">July 03, 2019</time>
+</div>
+
+<div class="meta__item-categories meta__item">
+	<svg class="meta__icon icon icon-category" width="16" height="16" viewBox="0 0 16 16"><path d="m7 2l1 2h8v11h-16v-13z"/></svg>
+	<span class="meta__text"><a class="meta__link" href="/categories/devops" rel="category">DevOps</a></span>
+</div>
+</div>
+		</header>
+<div class="post__toc toc">
+	<div class="toc__title">Page content</div>
+	<div class="toc__menu">
+		<nav id="TableOfContents">
+<ul>
+<li>
+<ul>
+<li><a href="#introduction">Introduction</a></li>
+<li><a href="#aws-account-users">AWS Account users</a></li>
+<li><a href="#aws-naming-conventions-and-billing-tags">AWS Naming conventions and billing tags</a></li>
+<li><a href="#terraform-state">Terraform state</a></li>
+<li><a href="#infrastructure-repositories">Infrastructure repositories</a></li>
+<li><a href="#aws-billing-alerts-and-budgets">AWS billing alerts and budgets</a></li>
+<li><a href="#slack-notifications-for-alerts">Slack Notifications for alerts</a></li>
+<li><a href="#conclusion">Conclusion</a></li>
+</ul></li>
+</ul>
+</nav>
+	</div>
+</div>
+<div class="content post__content clearfix">
+			
+
+<h2 id="introduction">Introduction</h2>
+
+<p>This article will focus on initial configuration we do when setting up a new AWS Account with Terraform. We will not cover Terraform basics.</p>
+
+<h2 id="aws-account-users">AWS Account users</h2>
+
+<p>AWS Accounts start with a single <code>root</code> user. Access to this user needs to be carefully managed and following AWS best practices, should not be used for day to day operations.</p>
+
+<p>You may need to use the AWS console to set up an administrator user for yourself, get AWS Keys and configure <a href="https://docs.aws.amazon.com/cli/latest/userguide/installing.html">awscli</a> on your laptop first (hopefully this is one of the few times we directly interact with AWS Console to ensure reproducibility).</p>
+
+<h2 id="aws-naming-conventions-and-billing-tags">AWS Naming conventions and billing tags</h2>
+
+<p>To keep track of our cloud resources and allow splitting costs by Tags, we should have a set of pre-defined resource tags consistently used across our cloud infrastructure. For this, we copied the Tags defined in the <a href="https://github.com/cloudposse/terraform-null-label">cloudposse/terraform-null-label</a> module for all our resources, which seem to suit small start ups like us.</p>
+
+<p>You will see us use these tags in the next section of this article.</p>
+
+<h2 id="terraform-state">Terraform state</h2>
+
+<p>Once you configured <code>awscli</code>, download <a href="https://releases.hashicorp.com/terraform/0.11.14/">Terraform</a>.</p>
+
+<p><strong>Note</strong>: We are using TF 0.11.x in this article. There is quite a few differences with 0.12.x, so be aware of that if you want to follow along &hellip;</p>
+
+<p>Terraform heavily relies on a so called <code>state file</code>. By default, the state file is kept locally within the project folder on your machine. For several team members to manage your cloud infrastructure, you will need to move the state file remotely and control access to it. Additionally, to keep Terraform configurations small and manageable, you need to split them across different state files referencing each other, this is more natural when keeping the state remotely.</p>
+
+<p>However, without any cloud infrastructure, you will have to start with a local file until you have configured the necessary cloud resources.</p>
+
+<p><strong>Note</strong>: <a href="https://app.terraform.io/signup">Terraform Cloud</a> is a recent offering from Hashicorp which is free for small teams and removes the need for you to set up the remote state while also providing other workflow features. You may skip to the next section if you prefer to use Terraform Cloud (we will however not cover Terraform Cloud in this article).</p>
+
+<p>At SWAT, we use Terraform itself to configure its own remote storage. As we are using AWS, we use S3 to store the state files and DynamoDb to manage locks and checksums. We also encrypt the state files with KMS as they will often contain sensitive information.</p>
+
+<p>Lets start by defining variables for the tags mentioned in the Naming Convention section earlier as well as the AWS region we will use:</p>
+
+<script type="application/javascript" src="//gist.github.com/so0k/6562264cc0e4d4d9a4441b8f892386f7.js?file=variables.tf"></script>
+
+<p>Next we define an S3 Bucket, a KMS Key for encryption and a DynamoDb table:</p>
+
+<script type="application/javascript" src="//gist.github.com/so0k/6562264cc0e4d4d9a4441b8f892386f7.js?file=state-main.tf"></script>
+
+<p>To configure our Terraform clients to put and fetch the state from S3 with encryption as required, we should capture the resource identities by defining them as outputs:</p>
+
+<script type="application/javascript" src="//gist.github.com/so0k/6562264cc0e4d4d9a4441b8f892386f7.js?file=outputs.tf"></script>
+
+<p>Finally, to use this in our Terraform projects, we just need to provide the <code>backend</code> configuration in the <code>terraform</code> provider block:</p>
+
+<script type="application/javascript" src="//gist.github.com/so0k/6562264cc0e4d4d9a4441b8f892386f7.js?file=provider.tf"></script>
+
+<p>Adding a new backend configuration, will actually prompt you to re-init your project folder. Terraform will then recognize you are moving the local state to the remote s3 bucket (which for this particular configuration, it created itself)!</p>
+
+<h2 id="infrastructure-repositories">Infrastructure repositories</h2>
+
+<p>Infrastructure as code means version control (i.e. <code>git</code>) is a must-have for audit and traceability purposes, thus we need to identify how we will organize our Infra repositories.</p>
+
+<p>At SWAT we started out with an over-arching account level repository to create Billing Alerts, Route53 domains, VPCs with cross account peering, KMS Keys and 3rd party services. We only have <code>Staging</code> <code>Production</code> environments per Amazon Account and an additional <code>Services</code> environment on our main account. We organized all these environments in a separate monorepo per account.</p>
+
+<p>We still follow this logic for new accounts, but if I was to re-design this today, I would try out more of a monorepo workflow as sub-folders can have their independent account and state configuration. This is mainly due to our limited team size, which does not require us to separate repositories for access control purposes for example.</p>
+
+<p>For a more detailed overview of Terraform folder structures, you may refer to:</p>
+
+<ul>
+<li><a href="http://www.antonbabenko.com/2016/09/21/how-i-structure-terraform-configurations.html">Anton Babenko - Terraform project structure - 2016</a></li>
+<li><a href="http://eddwardo.github.io/terraform/cloud/iac/2019/06/24/terraform-project-structure/">Piotr Szymański - Terraform project structure - 2019</a></li>
+</ul>
+
+<h2 id="aws-billing-alerts-and-budgets">AWS billing alerts and budgets</h2>
+
+<p>As your startup scales, AWS tends to provide great support through your account manager. Account managers can help provide credits for PoCs of AWS products, help arrange sessions with their solution architects as well as secure invitations to product trainings for you and your team. This is not pure altruism by AWS, but necessary as other Cloud Providers such as Google do the same and will gladly help you migrate quickly. Do make time to meet with your account manager and help identify useful resources for your startup.</p>
+
+<p>One of the first things any account manager will stress is the need to set up billing alerts and budgets (as well as locking in Reserved Instances). If you choose to ignore these warnings, you may get a very large and unpleasant AWS bill which can eat precious runway from your startup. It is annoying, but the following code snippets make it super easy.</p>
+
+<p>Therefore, I <strong>strongly</strong> recommend that as part of bootstrapping your AWS account, you effectively set some sensible budgets and billing alerts.</p>
+
+<p><strong>Note</strong>: For this configuration I referenced a <a href="https://blog.kylegalbraith.com/2018/10/08/how-to-better-watch-your-aws-costs-before-you-forget/">blog post by Kyle Galbraith</a>, updated to the current latest Terraform AWS provider and added Slack notifications.</p>
+
+<p>First, a manual step is required: <a href="https://docs.aws.amazon.com/AmazonCloudWatch/latest/monitoring/monitor_estimated_charges_with_cloudwatch.html#turning_on_billing_metrics">Enable billing metrics</a> through the AWS Billing and Cost Management Console.</p>
+
+<p>We also have to note that most of this AWS functionality is managed through its <code>us-east-1</code> region, if this is not your primary region - you can mix AWS resources across regions within the same TF config by using provider aliases as follows:</p>
+
+<script type="application/javascript" src="//gist.github.com/so0k/6562264cc0e4d4d9a4441b8f892386f7.js?file=billing-provider.tf"></script>
+
+<p>Next, we define a CloudWatch Alert and SNS topic to publish billing alerts (consuming the alerts will be covered in the last section of this article)</p>
+
+<script type="application/javascript" src="//gist.github.com/so0k/6562264cc0e4d4d9a4441b8f892386f7.js?file=billing-main.tf"></script>
+
+<p>This will create alerts when our total bill is estimated to exceed our defined threshold. From our own experience, we identified certain services which need a closer eye and strongly recommend to also set up AWS Service specific budgets.</p>
+
+<p>Before creating AWS Budgets, we need to grant <code>budgets.amazonaws.com</code> service the right to publish alerts to the SNS topic created earlier. We do this by copying the default SNS Topic policy and adding the necessary statements:</p>
+
+<script type="application/javascript" src="//gist.github.com/so0k/6562264cc0e4d4d9a4441b8f892386f7.js?file=billing-budgets.tf"></script>
+
+<p>Finally, we can create budgets - for example we want to make sure our CloudWatch bill does not exceed USD 1000 a month (or stays below UDS35/day):</p>
+
+<script type="application/javascript" src="//gist.github.com/so0k/6562264cc0e4d4d9a4441b8f892386f7.js?file=billing-budgets-cloudwatch.tf"></script>
+
+<p><strong>Note</strong>: We noticed AWS CloudWatch bills going over USD50/day after enabling certain DataDog AWS integrations, thus we sadly experienced the need for such a budget.</p>
+
+<p>Other budgets may be for <code>EC2-Other</code> (NAT Gateways, Data Transfer Costs, &hellip; ):</p>
+
+<script type="application/javascript" src="//gist.github.com/so0k/6562264cc0e4d4d9a4441b8f892386f7.js?file=billing-budgets-ec2-other.tf"></script>
+
+<p><strong>Note</strong>: The relation between the service name in the AWS Billing and Cost Management Console (i.e. <code>EC2-other</code>) and the actual API name (i.e. <code>Amazon Elastic Block Store</code>) is quite unclear. We have requested a mapping from our AWS Account manager which we will add to this article once received. For now we create test budgets in the console and export to CSV to get the actual API name of each service.</p>
+
+<p>The advantage of defining these budgets in Terraform is that we can template and auto generate these budgets easily - we will see how to do this in a future blog post.</p>
+
+<h2 id="slack-notifications-for-alerts">Slack Notifications for alerts</h2>
+
+<p>Slack is a very popular tool for startups and is often acted upon faster than email. This is the main reason we choose to feed the messages from the above SNS topics into relevant slack channels using an AWS Lambda function.</p>
+
+<p>For this we can use a very basic function from the <a href="https://github.com/terraform-aws-modules/terraform-aws-notify-slack">terraform-aws-modules/terraform-aws-notify-slack</a> public module.</p>
+
+<p>First, get the <a href="https://raw.githubusercontent.com/terraform-aws-modules/terraform-aws-notify-slack/master/functions/notify_slack.py">function body</a> - and fork it under <code>./functions/notify_slack/py</code> into our configuration as a good starting template. Notice that the function takes following environment variables:</p>
+
+<ul>
+<li><code>SLACK_WEBHOOK_URL</code>: Used as-is if <code>startswith</code> &lsquo;http&rsquo;, else the function will try to use KMS to decrypt the url first (IAM access required)</li>
+<li><code>SLACK_CHANNEL</code>: The Slack channel to post notifications to</li>
+<li><code>SLACK_USERNAME</code>: The Slack user name to post notifications as</li>
+<li><code>SLACK_EMOJI</code>: The Emoji used when posting notifications to Slack</li>
+<li><code>AWS_REGION</code>: required if KMS encryption is used for the <code>SLACK_WEBHOOK_URL</code></li>
+</ul>
+
+<p><strong>Note</strong>: We do not use the upstream module because we re-use the same lambda function for many different SNS topics, for example SES Bounce notifications (which we will cover in a future blog post) and need to separate the lambda function from the topics we subscribe it to.</p>
+
+<p>Next, we define a role for the lambda resource running the function and give it permissions to AWS Services it interacts with:</p>
+
+<script type="application/javascript" src="//gist.github.com/so0k/6562264cc0e4d4d9a4441b8f892386f7.js?file=notify-iam.tf"></script>
+
+<p><strong>Note</strong>: If we encrypt the <code>SLACK_WEBHOOK_URL</code> (which is a good idea as it is committed to git), we should also grant <code>KMS</code> access in the above policy. See the repository referenced above for the exact permissions required.</p>
+
+<p>Next, we define the AWS Lambda cloud resources:</p>
+
+<script type="application/javascript" src="//gist.github.com/so0k/6562264cc0e4d4d9a4441b8f892386f7.js?file=notify-lambda.tf"></script>
+
+<p>And finally, with the Lambda function created, we subscribe it to the topic and give SNS the ability to invoke it:</p>
+
+<script type="application/javascript" src="//gist.github.com/so0k/6562264cc0e4d4d9a4441b8f892386f7.js?file=notify-billing-subscription.tf"></script>
+
+<h2 id="conclusion">Conclusion</h2>
+
+<p>In this article we have covered basic AWS Bootstrapping with Terraform, focused on managing the Terraform state remotely, encrypted and as part of our main AWS Account. We have also highlighted the importance of AWS billing alerts and Budgets and provided an easy way to automatically create these with alerts going into Slack from the get-go.</p>
+
+<p>With our AWS Account bootstrapped, we can now focus on using AWS Products to iterate quickly on product features while keeping control of our infrastructure and our bills.</p>
+
+		</div>
+		
+<div class="post__tags tags clearfix">
+	<svg class="tags__icon icon icon-tag" width="16" height="16" viewBox="0 0 32 32"><path d="M32 19c0 1-1 2-1 2L21 31s-1 1-2 1-2-1-2-1L2 16c-1-1-1.4-2-1.4-2S0 12.5 0 11V3C0 1.5.8.8.8.8S1.5 0 3 0h8c1.5 0 3 .6 3 .6S15 1 16 2l15 15s1 1 1 2zM7 10a3 3 0 1 0 0-6 3 3 0 0 0 0 6z"/></svg>
+	<ul class="tags__list">
+		<li class="tags__item"><a class="tags__link btn" href="/tags/aws/" rel="tag">AWS</a></li>
+		<li class="tags__item"><a class="tags__link btn" href="/tags/terraform/" rel="tag">Terraform</a></li>
+	</ul>
+</div>
+	</article>
+</main>
+
+    <div class="authorbox clearfix">
+      <figure class="authorbox__avatar">
+        <img alt="Vincent De Smet avatar" src="/img/authors/vincent-de-smet.jpeg" class="avatar" height="90" width="90">
+      </figure>
+      <div class="authorbox__header">
+        <span class="authorbox__name">
+          About Vincent De Smet
+        </span>
+      </div>
+      <div class="authorbox__description">
+        Senior DevOps in charge of the initial AWS configuration at Swatmobile. Specializes in Terraform, Kubernetes and Cloud architectures.
+      </div>
+    </div>
+
+
+
+
+			</div>
+			
+		</div>
+		<footer class="footer">
+	<div class="container footer__container flex">
+		
+		<div class="footer__copyright">
+			&copy; 2019 Ministry of Movement Ltd.
+			<span class="footer__copyright-credits">Generated with <a href="https://gohugo.io/" rel="nofollow noopener" target="_blank">Hugo</a> and <a href="https://github.com/Vimux/Mainroad/" rel="nofollow noopener" target="_blank">Mainroad</a> theme.</span>
+		</div>
+	</div>
+</footer>
+	</div>
+<script async defer src="/js/menu.js"></script></body>
+</html>

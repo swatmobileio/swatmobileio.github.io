@@ -1,0 +1,24 @@
+<?xml version="1.0" encoding="utf-8" standalone="yes" ?>
+<rss version="2.0" xmlns:atom="http://www.w3.org/2005/Atom">
+  <channel>
+    <title>Terraform on Swatmobile Engineering</title>
+    <link>https://engineering.swatmobile.io/tags/terraform/</link>
+    <description>Recent content in Terraform on Swatmobile Engineering</description>
+    <generator>Hugo -- gohugo.io</generator>
+    <language>en-us</language>
+    <lastBuildDate>Wed, 03 Jul 2019 16:07:48 +0700</lastBuildDate>
+    
+	<atom:link href="https://engineering.swatmobile.io/tags/terraform/index.xml" rel="self" type="application/rss+xml" />
+    
+    
+    <item>
+      <title>Bootstrapping AWS with Terraform</title>
+      <link>https://engineering.swatmobile.io/posts/bootstrapping-aws/</link>
+      <pubDate>Wed, 03 Jul 2019 16:07:48 +0700</pubDate>
+      
+      <guid>https://engineering.swatmobile.io/posts/bootstrapping-aws/</guid>
+      <description>At SWAT we sometimes set up dedicated AWS Accounts based on tenant requirements. In this article we will focus on the basics we lay down when setting up a new AWS Account using Terraform. More specifically: Terraform state management and AWS Billing Alerts</description>
+    </item>
+    
+  </channel>
+</rss>

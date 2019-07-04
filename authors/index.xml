@@ -1,0 +1,33 @@
+<?xml version="1.0" encoding="utf-8" standalone="yes" ?>
+<rss version="2.0" xmlns:atom="http://www.w3.org/2005/Atom">
+  <channel>
+    <title>Authors on Swatmobile Engineering</title>
+    <link>https://engineering.swatmobile.io/authors/</link>
+    <description>Recent content in Authors on Swatmobile Engineering</description>
+    <generator>Hugo -- gohugo.io</generator>
+    <language>en-us</language>
+    <lastBuildDate>Wed, 03 Jul 2019 16:07:48 +0700</lastBuildDate>
+    
+	<atom:link href="https://engineering.swatmobile.io/authors/index.xml" rel="self" type="application/rss+xml" />
+    
+    
+    <item>
+      <title></title>
+      <link>https://engineering.swatmobile.io/authors/vincent-de-smet/</link>
+      <pubDate>Wed, 03 Jul 2019 16:07:48 +0700</pubDate>
+      
+      <guid>https://engineering.swatmobile.io/authors/vincent-de-smet/</guid>
+      <description>Senior DevOps in charge of the initial AWS configuration at Swatmobile. Specializes in Terraform, Kubernetes and Cloud architectures.</description>
+    </item>
+    
+    <item>
+      <title></title>
+      <link>https://engineering.swatmobile.io/authors/toan-nguyen/</link>
+      <pubDate>Mon, 01 Jan 0001 00:00:00 +0000</pubDate>
+      
+      <guid>https://engineering.swatmobile.io/authors/toan-nguyen/</guid>
+      <description>likes Ubuntu</description>
+    </item>
+    
+  </channel>
+</rss>
