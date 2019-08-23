@@ -6,7 +6,7 @@
     <description>Recent content in Tags on Swatmobile Engineering</description>
     <generator>Hugo -- gohugo.io</generator>
     <language>en-us</language>
-    <lastBuildDate>Wed, 03 Jul 2019 16:07:48 +0700</lastBuildDate>
+    <lastBuildDate>Fri, 23 Aug 2019 09:07:48 +0700</lastBuildDate>
     
 	<atom:link href="https://engineering.swatmobile.io/tags/index.xml" rel="self" type="application/rss+xml" />
     
@@ -14,16 +14,43 @@
     <item>
       <title>AWS</title>
       <link>https://engineering.swatmobile.io/tags/aws/</link>
-      <pubDate>Wed, 03 Jul 2019 16:07:48 +0700</pubDate>
+      <pubDate>Fri, 23 Aug 2019 09:07:48 +0700</pubDate>
       
       <guid>https://engineering.swatmobile.io/tags/aws/</guid>
       <description></description>
     </item>
     
     <item>
+      <title>DataDog</title>
+      <link>https://engineering.swatmobile.io/tags/datadog/</link>
+      <pubDate>Fri, 23 Aug 2019 09:07:48 +0700</pubDate>
+      
+      <guid>https://engineering.swatmobile.io/tags/datadog/</guid>
+      <description></description>
+    </item>
+    
+    <item>
+      <title>Kubernetes</title>
+      <link>https://engineering.swatmobile.io/tags/kubernetes/</link>
+      <pubDate>Fri, 23 Aug 2019 09:07:48 +0700</pubDate>
+      
+      <guid>https://engineering.swatmobile.io/tags/kubernetes/</guid>
+      <description></description>
+    </item>
+    
+    <item>
+      <title>Spot</title>
+      <link>https://engineering.swatmobile.io/tags/spot/</link>
+      <pubDate>Fri, 23 Aug 2019 09:07:48 +0700</pubDate>
+      
+      <guid>https://engineering.swatmobile.io/tags/spot/</guid>
+      <description></description>
+    </item>
+    
+    <item>
       <title>Terraform</title>
       <link>https://engineering.swatmobile.io/tags/terraform/</link>
-      <pubDate>Wed, 03 Jul 2019 16:07:48 +0700</pubDate>
+      <pubDate>Fri, 23 Aug 2019 09:07:48 +0700</pubDate>
       
       <guid>https://engineering.swatmobile.io/tags/terraform/</guid>
       <description></description>

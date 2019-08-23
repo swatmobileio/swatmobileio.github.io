@@ -6,7 +6,7 @@
     <description>Recent content in Authors on Swatmobile Engineering</description>
     <generator>Hugo -- gohugo.io</generator>
     <language>en-us</language>
-    <lastBuildDate>Wed, 03 Jul 2019 16:07:48 +0700</lastBuildDate>
+    <lastBuildDate>Fri, 23 Aug 2019 09:07:48 +0700</lastBuildDate>
     
 	<atom:link href="https://engineering.swatmobile.io/authors/index.xml" rel="self" type="application/rss+xml" />
     
@@ -14,7 +14,7 @@
     <item>
       <title></title>
       <link>https://engineering.swatmobile.io/authors/vincent-de-smet/</link>
-      <pubDate>Wed, 03 Jul 2019 16:07:48 +0700</pubDate>
+      <pubDate>Fri, 23 Aug 2019 09:07:48 +0700</pubDate>
       
       <guid>https://engineering.swatmobile.io/authors/vincent-de-smet/</guid>
       <description>Senior DevOps in charge of the initial AWS configuration at Swatmobile. Specializes in Terraform, Kubernetes and Cloud architectures.</description>

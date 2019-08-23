@@ -1,14 +1,14 @@
 <?xml version="1.0" encoding="utf-8" standalone="yes" ?>
 <rss version="2.0" xmlns:atom="http://www.w3.org/2005/Atom">
   <channel>
-    <title>Swatmobile Engineering</title>
-    <link>https://engineering.swatmobile.io/authors/vincent-de-smet/</link>
-    <description>Recent content on Swatmobile Engineering</description>
+    <title>Spot on Swatmobile Engineering</title>
+    <link>https://engineering.swatmobile.io/tags/spot/</link>
+    <description>Recent content in Spot on Swatmobile Engineering</description>
     <generator>Hugo -- gohugo.io</generator>
     <language>en-us</language>
     <lastBuildDate>Fri, 23 Aug 2019 09:07:48 +0700</lastBuildDate>
     
-	<atom:link href="https://engineering.swatmobile.io/authors/vincent-de-smet/index.xml" rel="self" type="application/rss+xml" />
+	<atom:link href="https://engineering.swatmobile.io/tags/spot/index.xml" rel="self" type="application/rss+xml" />
     
     
     <item>
@@ -18,15 +18,6 @@
       
       <guid>https://engineering.swatmobile.io/posts/eks-migration/</guid>
       <description>The Kubernetes community has great momentum, resulting in frequent releases packed with features. Keeping up to speed with every release best practices in terms of bootstrapping and patches is close to a full time job. Luckily, every major cloud has a managed Kubernetes offering, allowing you to iterate faster on the workloads you run on top of it. This article will be a detailed overview of our adoption and migration into EKS.</description>
-    </item>
-    
-    <item>
-      <title>Bootstrapping your AWS account with Terraform</title>
-      <link>https://engineering.swatmobile.io/posts/bootstrapping-aws/</link>
-      <pubDate>Wed, 03 Jul 2019 16:07:48 +0700</pubDate>
-      
-      <guid>https://engineering.swatmobile.io/posts/bootstrapping-aws/</guid>
-      <description>At SWAT we sometimes set up dedicated AWS Accounts based on tenant requirements. In this article we will focus on the basics we lay down when setting up a new AWS Account using Terraform. More specifically: Terraform state management and AWS Billing Alerts</description>
     </item>
     
   </channel>

@@ -6,10 +6,19 @@
     <description>Recent content in Terraform on Swatmobile Engineering</description>
     <generator>Hugo -- gohugo.io</generator>
     <language>en-us</language>
-    <lastBuildDate>Wed, 03 Jul 2019 16:07:48 +0700</lastBuildDate>
+    <lastBuildDate>Fri, 23 Aug 2019 09:07:48 +0700</lastBuildDate>
     
 	<atom:link href="https://engineering.swatmobile.io/tags/terraform/index.xml" rel="self" type="application/rss+xml" />
     
+    
+    <item>
+      <title>Our migration from kops to EKS</title>
+      <link>https://engineering.swatmobile.io/posts/eks-migration/</link>
+      <pubDate>Fri, 23 Aug 2019 09:07:48 +0700</pubDate>
+      
+      <guid>https://engineering.swatmobile.io/posts/eks-migration/</guid>
+      <description>The Kubernetes community has great momentum, resulting in frequent releases packed with features. Keeping up to speed with every release best practices in terms of bootstrapping and patches is close to a full time job. Luckily, every major cloud has a managed Kubernetes offering, allowing you to iterate faster on the workloads you run on top of it. This article will be a detailed overview of our adoption and migration into EKS.</description>
+    </item>
     
     <item>
       <title>Bootstrapping your AWS account with Terraform</title>

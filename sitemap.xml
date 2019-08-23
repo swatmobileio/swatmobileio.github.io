@@ -4,60 +4,83 @@
   
   <url>
     <loc>https://engineering.swatmobile.io/authors/vincent-de-smet/</loc>
-    <lastmod>2019-07-03T16:07:48+07:00</lastmod>
+    <lastmod>2019-08-23T09:07:48+07:00</lastmod>
   </url>
   
   <url>
     <loc>https://engineering.swatmobile.io/tags/aws/</loc>
-    <lastmod>2019-07-03T16:07:48+07:00</lastmod>
+    <lastmod>2019-08-23T09:07:48+07:00</lastmod>
     <priority>0</priority>
   </url>
   
   <url>
     <loc>https://engineering.swatmobile.io/authors/</loc>
-    <lastmod>2019-07-03T16:07:48+07:00</lastmod>
+    <lastmod>2019-08-23T09:07:48+07:00</lastmod>
+    <priority>0</priority>
+  </url>
+  
+  <url>
+    <loc>https://engineering.swatmobile.io/categories/</loc>
+    <lastmod>2019-08-23T09:07:48+07:00</lastmod>
+    <priority>0</priority>
+  </url>
+  
+  <url>
+    <loc>https://engineering.swatmobile.io/tags/datadog/</loc>
+    <lastmod>2019-08-23T09:07:48+07:00</lastmod>
+    <priority>0</priority>
+  </url>
+  
+  <url>
+    <loc>https://engineering.swatmobile.io/categories/devops/</loc>
+    <lastmod>2019-08-23T09:07:48+07:00</lastmod>
+    <priority>0</priority>
+  </url>
+  
+  <url>
+    <loc>https://engineering.swatmobile.io/tags/kubernetes/</loc>
+    <lastmod>2019-08-23T09:07:48+07:00</lastmod>
+    <priority>0</priority>
+  </url>
+  
+  <url>
+    <loc>https://engineering.swatmobile.io/posts/eks-migration/</loc>
+    <lastmod>2019-08-23T09:07:48+07:00</lastmod>
+  </url>
+  
+  <url>
+    <loc>https://engineering.swatmobile.io/posts/</loc>
+    <lastmod>2019-08-23T09:07:48+07:00</lastmod>
+    <priority>0</priority>
+  </url>
+  
+  <url>
+    <loc>https://engineering.swatmobile.io/tags/spot/</loc>
+    <lastmod>2019-08-23T09:07:48+07:00</lastmod>
+    <priority>0</priority>
+  </url>
+  
+  <url>
+    <loc>https://engineering.swatmobile.io/</loc>
+    <lastmod>2019-08-23T09:07:48+07:00</lastmod>
+    <priority>0</priority>
+  </url>
+  
+  <url>
+    <loc>https://engineering.swatmobile.io/tags/</loc>
+    <lastmod>2019-08-23T09:07:48+07:00</lastmod>
+    <priority>0</priority>
+  </url>
+  
+  <url>
+    <loc>https://engineering.swatmobile.io/tags/terraform/</loc>
+    <lastmod>2019-08-23T09:07:48+07:00</lastmod>
     <priority>0</priority>
   </url>
   
   <url>
     <loc>https://engineering.swatmobile.io/posts/bootstrapping-aws/</loc>
     <lastmod>2019-07-03T16:07:48+07:00</lastmod>
-  </url>
-  
-  <url>
-    <loc>https://engineering.swatmobile.io/categories/</loc>
-    <lastmod>2019-07-03T16:07:48+07:00</lastmod>
-    <priority>0</priority>
-  </url>
-  
-  <url>
-    <loc>https://engineering.swatmobile.io/categories/devops/</loc>
-    <lastmod>2019-07-03T16:07:48+07:00</lastmod>
-    <priority>0</priority>
-  </url>
-  
-  <url>
-    <loc>https://engineering.swatmobile.io/posts/</loc>
-    <lastmod>2019-07-03T16:07:48+07:00</lastmod>
-    <priority>0</priority>
-  </url>
-  
-  <url>
-    <loc>https://engineering.swatmobile.io/</loc>
-    <lastmod>2019-07-03T16:07:48+07:00</lastmod>
-    <priority>0</priority>
-  </url>
-  
-  <url>
-    <loc>https://engineering.swatmobile.io/tags/</loc>
-    <lastmod>2019-07-03T16:07:48+07:00</lastmod>
-    <priority>0</priority>
-  </url>
-  
-  <url>
-    <loc>https://engineering.swatmobile.io/tags/terraform/</loc>
-    <lastmod>2019-07-03T16:07:48+07:00</lastmod>
-    <priority>0</priority>
   </url>
   
   <url>

@@ -1,0 +1,338 @@
+<!DOCTYPE html>
+<html class="no-js" lang="en-us">
+<head>
+	<meta charset="UTF-8">
+	<meta name="viewport" content="width=device-width, initial-scale=1">
+	<meta http-equiv="X-UA-Compatible" content="IE=edge">
+	<title>Our migration from kops to EKS - Swatmobile Engineering</title>
+	<script>(function(d,e){d[e]=d[e].replace("no-js","js");})(document.documentElement,"className");</script>
+	<meta name="description" content="">
+	<meta property="og:title" content="Our migration from kops to EKS" />
+<meta property="og:description" content="The Kubernetes community has great momentum, resulting in frequent releases packed with features. Keeping up to speed with every release best practices in terms of bootstrapping and patches is close to a full time job. Luckily, every major cloud has a managed Kubernetes offering, allowing you to iterate faster on the workloads you run on top of it. This article will be a detailed overview of our adoption and migration into EKS." />
+<meta property="og:type" content="article" />
+<meta property="og:url" content="https://engineering.swatmobile.io/posts/eks-migration/" />
+<meta property="article:published_time" content="2019-08-23T09:07:48&#43;07:00"/>
+<meta property="article:modified_time" content="2019-08-23T09:07:48&#43;07:00"/>
+
+	<meta name="twitter:card" content="summary"/>
+<meta name="twitter:title" content="Our migration from kops to EKS"/>
+<meta name="twitter:description" content="The Kubernetes community has great momentum, resulting in frequent releases packed with features. Keeping up to speed with every release best practices in terms of bootstrapping and patches is close to a full time job. Luckily, every major cloud has a managed Kubernetes offering, allowing you to iterate faster on the workloads you run on top of it. This article will be a detailed overview of our adoption and migration into EKS."/>
+
+	<link rel="dns-prefetch" href="//fonts.googleapis.com">
+	<link rel="dns-prefetch" href="//fonts.gstatic.com">
+	<link rel="stylesheet" href="https://fonts.googleapis.com/css?family=Open+Sans:400,400i,700">
+	<link rel="stylesheet" href="/css/style.css">
+	
+	<link rel="shortcut icon" href="/favicon.ico">
+		
+</head>
+<body class="body">
+	<div class="container container--outer">
+		<header class="header">
+	<div class="container">
+		<div class="logo">
+			<a class="logo__link" href="/" title="Swatmobile Engineering" rel="home">
+				<div class="logo__title">Swatmobile Engineering</div>
+				<div class="logo__tagline">A tech blog from the engineering teams at SWAT</div>
+			</a>
+		</div>
+		<div class="divider"></div>
+	</div>
+</header>
+		<div class="wrapper flex">
+			<div class="primary">
+			
+<main class="main" role="main">
+	<article class="post">
+		<header class="post__header">
+			<h1 class="post__title">Our migration from kops to EKS</h1>
+			<p class="post__lead">EKS in a Terraform way</p>
+			<div class="post__meta meta">
+<div class="meta__item-datetime meta__item">
+	<svg class="meta__icon icon icon-time" width="16" height="14" viewBox="0 0 30 28"><path d="M15 0C7 0 1 6 1 14s6 14 14 14 14-6 14-14S23 0 15 0zm0 25C9 25 4 20 4 14S9 3 15 3s11 5 11 11-5 11-11 11zm1-18h-2v8.4l6.8 4.4L22 18l-6-3.8V7z"/></svg>
+	<time class="meta__text" datetime="2019-08-23T09:07:48">August 23, 2019</time>
+</div>
+
+<div class="meta__item-categories meta__item">
+	<svg class="meta__icon icon icon-category" width="16" height="16" viewBox="0 0 16 16"><path d="m7 2l1 2h8v11h-16v-13z"/></svg>
+	<span class="meta__text"><a class="meta__link" href="/categories/devops" rel="category">DevOps</a></span>
+</div>
+</div>
+		</header>
+<div class="post__toc toc">
+	<div class="toc__title">Page content</div>
+	<div class="toc__menu">
+		<nav id="TableOfContents">
+<ul>
+<li>
+<ul>
+<li><a href="#introduction">Introduction</a></li>
+<li><a href="#background">Background</a></li>
+<li><a href="#eks-cluster-admin-access-best-practice">EKS Cluster admin access best practice</a></li>
+<li><a href="#eks-references-and-initial-exploration">EKS references and initial exploration</a></li>
+<li><a href="#mixed-instance-autoscaling-eks-workers-managed-by-terraform">Mixed instance autoscaling EKS workers managed by Terraform</a></li>
+<li><a href="#handling-multiple-types-of-eks-workers">Handling multiple types of EKS workers</a></li>
+<li><a href="#node-maintenance-autoscaling-and-lifecyclehooks">Node maintenance, Autoscaling and LifeCycleHooks</a></li>
+</ul></li>
+</ul>
+</nav>
+	</div>
+</div>
+<div class="content post__content clearfix">
+			
+
+<h2 id="introduction">Introduction</h2>
+
+<p>This article will focus on several design decisions we made adopting EKS into our existing Terraform based Infrastructure management. Some of the main reasons for us to consider EKS were:</p>
+
+<ul>
+<li>Ability to adopt latest Kubernetes releases and patches with less effort through a managed solution</li>
+<li>Worry less about the Kube control plane and etcd configuration (etcd-manager introduced with kops 1.12 made necessary security changes, requiring a significant investment in reviewing our core cluster components to ensure a smooth upgrade - we wanted to simplify this upgrade process)</li>
+<li>Potential cost savings in regards to the control plane, less operational overhead as well as moving from 100% RI / onDemand workers to include Spot Instances</li>
+</ul>
+
+<p>To wet your appetite, here are some initial conclusions after we completed our migration:</p>
+
+<ul>
+<li>in kops our CoreOS nodes would be ready for cluster workloads in about 3-5 minutes after being created</li>
+<li>in EKS, using the pre-baked Amazon Linux 2 amis for EKS, our worker nodes are ready for cluster workloads in just about 1 minute after the scale-up event</li>
+<li>We have 70% savings using mixed spot instances:</li>
+</ul>
+
+<figure>
+    <img src="/img/posts/eks-migration/spot-savings.png"/> <figcaption>
+            <h4>Spot Savings</h4>
+        </figcaption>
+</figure>
+
+
+<h2 id="background">Background</h2>
+
+<p>Personally I have been running Kubernetes on AWS using kops since 2017 (using pure Terraform before that). I shared early 2018 how we used kops bootstrapping in a presentation before I joined swat:</p>
+
+
+<div style="position: relative; padding-bottom: 56.25%; height: 0; overflow: hidden;">
+  <iframe src="//www.youtube.com/embed/f87M_p91Tg0" style="position: absolute; top: 0; left: 0; width: 100%; height: 100%; border:0;" allowfullscreen title="YouTube Video"></iframe>
+</div>
+
+
+<p><a href="https://speakerdeck.com/so0k/singapore-kubernetes-meetup-cluster-bootstrap">slides</a></p>
+
+<p>End of 2018, I shared how we used kops templating at swat as well as how we were using several nodeGroups for security reasons:</p>
+
+
+<div style="position: relative; padding-bottom: 56.25%; height: 0; overflow: hidden;">
+  <iframe src="//www.youtube.com/embed/vbx9RCJjzvg" style="position: absolute; top: 0; left: 0; width: 100%; height: 100%; border:0;" allowfullscreen title="YouTube Video"></iframe>
+</div>
+
+
+<p><a href="https://speakerdeck.com/so0k/kubernetes-security-challenges">slides</a></p>
+
+<p>In both cases, kops generated a Terraform module and provides node provisioning for us, which we were able to extend and hook into for customizations.</p>
+
+<h2 id="eks-cluster-admin-access-best-practice">EKS Cluster admin access best practice</h2>
+
+<p>Initial Google searches surfaced the great <a href="https://eksworkshop.com/">eksworkshop</a> and Hashicorp&rsquo;s own <a href="https://learn.hashicorp.com/terraform/aws/eks-intro">intro to EKS</a>.</p>
+
+<p>However, neither of these resources highlighted the importance of paying close attention to the AWS account provisioning the EKS cluster (or we missed the warnings). As such I wanted to highlight how we decided to create an AWS IAM role in Terraform specifically for creating EKS clusters, ensuring a select group of people could assume this role to take full ownership of a cluster.</p>
+
+<p>We first need to define the required permissions to provision EKS clusters (this includes the ability to pass account roles to the EKS service from Amazon)</p>
+
+<script type="application/javascript" src="//gist.github.com/so0k/b31b767c126a40a6ded6cd49d8837911.js?file=eks-iam-role-1.tf"></script>
+
+<p>Next we need to allow users in our account to assume this role by making the role trust the current account</p>
+
+<script type="application/javascript" src="//gist.github.com/so0k/b31b767c126a40a6ded6cd49d8837911.js?file=eks-iam-role-2.tf"></script>
+
+<p>Finally, we create an IAM Group, so we can manage which users can assume this eks role based on their group membership</p>
+
+<script type="application/javascript" src="//gist.github.com/so0k/b31b767c126a40a6ded6cd49d8837911.js?file=eks-iam-role-3.tf"></script>
+
+<p>To create the EKS cluster using Terraform, first create the cluster specific IAM roles and security groups following the Hashicorp documentation.</p>
+
+<p>Every EKS cluster, however, should now be created using this IAM role (we use terraform remote state to pass the role ARN here)</p>
+
+<script type="application/javascript" src="//gist.github.com/so0k/b31b767c126a40a6ded6cd49d8837911.js?file=eks-iam-role-4.tf"></script>
+
+<p>Cluster admins can now gain Kubernetes access using the following command</p>
+
+<pre><code>aws eks --region ${AWS_REGION} update-kubeconfig --name ${CLUSTER_NAME} --role-arn ${EKS_ROLE_ARN} --alias ${CLUSTER_CTX}
+
+kubectl --context ${CLUSTER_CTX} cluster-info
+</code></pre>
+
+<h2 id="eks-references-and-initial-exploration">EKS references and initial exploration</h2>
+
+<p>The EKS workshop mainly relies on <code>eksctl</code> a tool initially developed by weaveworks, but adopted by AWS and with a significant amount of contributions by a growing community. The eksworkshop provides a sample CloudFormation template specifically to run spot Instances - at the time of writing, the Hashicorp documentation did not detail how to set up mixed instance autoscaling groups.</p>
+
+<p>To fit EKS into our existing Terraform based workflow, we mixed the Hashicorp terraform code with a single autoscaling group of workers managed by CloudFormation:</p>
+
+<script type="application/javascript" src="//gist.github.com/so0k/b31b767c126a40a6ded6cd49d8837911.js?file=compute-workers-cfn-1.tf"></script>
+
+<p>As we were adding different type of workers, some of which we did not want to autoscale, we had the need to customize the CloudFormation template  so we forked it and push it to our own s3 bucket as follows:</p>
+
+<script type="application/javascript" src="//gist.github.com/so0k/b31b767c126a40a6ded6cd49d8837911.js?file=cfn-template.tf"></script>
+
+<p>Here is an example of the initial changes we were making:</p>
+
+<script type="application/javascript" src="//gist.github.com/so0k/b31b767c126a40a6ded6cd49d8837911.js?file=cfn-template-changes.diff"></script>
+
+<p>Using this custom template the Cloudformation Terraform resource instead</p>
+
+<script type="application/javascript" src="//gist.github.com/so0k/b31b767c126a40a6ded6cd49d8837911.js?file=cfn-tf-changes.diff"></script>
+
+<p>Here are the final results applying the above diffs for <a href="https://gist.github.com/so0k/b31b767c126a40a6ded6cd49d8837911#file-amazon-eks-nodegroup-with-mixed-instances-custom-yml">the CFN template</a> and <a href="https://gist.github.com/so0k/b31b767c126a40a6ded6cd49d8837911#file-compute-workers-cfn-2-tf">TF config</a></p>
+
+<p>At this stage we re-evaluated our decisions to use CloudFormation stacks managed by Terraform:</p>
+
+<ul>
+<li>kube-aws / eksctl / &hellip; - are all tools which render CloudFormation templates based on common flags and deployment scenarios</li>
+<li>There is a big community managing ekstcl adding configuration flags and implementing best practices into the CFN templates</li>
+<li>CloudFormation has the ability to manage rolling updates fully from the AWS side, it has the ability to handle phases with nodes signaling the stack about the progress</li>
+</ul>
+
+<p>Struggles:</p>
+
+<ul>
+<li>We had to learn CloudFormation while using Terraform for all our other infrastructure (both on AWS and not on AWS)</li>
+<li>Terraform managing CloudFormation stacks is not ideal, perhaps due to our inexperience we ended up having to refresh the CFN stacks through the console for certain template changes</li>
+</ul>
+
+<p>We either had to adopt eksctl or manage our autoscaling groups fully with Terraform.</p>
+
+<p>We felt the eksctl workflow did not suit our needs and decided to further explore mixed instance autoscaling EKS workers managed by Terraform.</p>
+
+<h2 id="mixed-instance-autoscaling-eks-workers-managed-by-terraform">Mixed instance autoscaling EKS workers managed by Terraform</h2>
+
+<p>To achieve this, we had to translate the CFN stack to Terraform, this consists of:</p>
+
+<ul>
+<li>The Instance user-data which allows some configuration of the EKS node boostrapping script</li>
+<li>The newer generation LaunchTemplate</li>
+<li>The AutoScalingGroup with mixed instance policies</li>
+<li>AutoScaling lifecycle hooks used to handle scaling events</li>
+</ul>
+
+<p>To make the boostrapping configurable depending on the type of workers, we decided to template the user-data script:</p>
+
+<script type="application/javascript" src="//gist.github.com/so0k/b31b767c126a40a6ded6cd49d8837911.js?file=user-data.tpl.sh"></script>
+
+<p>Once templated, we render it in terraform as follows</p>
+
+<script type="application/javascript" src="//gist.github.com/so0k/b31b767c126a40a6ded6cd49d8837911.js?file=compute-workers-tf-1-user-data.tf"></script>
+
+<p>The launch template is very straight forward</p>
+
+<script type="application/javascript" src="//gist.github.com/so0k/b31b767c126a40a6ded6cd49d8837911.js?file=compute-workers-tf-1-launch-template.tf"></script>
+
+<p>The Autoscaling group with mixed instance policies and LifeCycleHooks required the most time to fully grasp</p>
+
+<script type="application/javascript" src="//gist.github.com/so0k/b31b767c126a40a6ded6cd49d8837911.js?file=compute-workers-tf-1-asg.tf"></script>
+
+<h2 id="handling-multiple-types-of-eks-workers">Handling multiple types of EKS workers</h2>
+
+<p>Using kops, you run certain components on the master nodes, these have instance profiles with higher permissions. Relying on kube2iam / kiam, may cause unexpected failures when the sts token retrieval is delayed. Zalando has a work around, but it is very invasive, requiring you to fork community maintained components. As such we decided to create a set of &ldquo;System&rdquo; nodes which have higher permissions. Use taints, labels and tolerations to restrict cluster components to these system nodes. These system nodes have custom IAM Profiles, different taints &amp; labels, different instance types as well as different kube reserved resources.</p>
+
+<p>Additionally, our cluster ingress started to be heavy handed with an in-house developed API Gateway tagged on, as a result we decided not to run it as DaemonSet on every node any more and dedicating a set of &ldquo;Edge&rdquo; nodes (again using taints &amp; labels to control the workloads). As we moved to NLBs, we wanted only these &ldquo;Edge&rdquo; nodes to allow ingress through the NLBs into our private subnets. These edge nodes have different security groups from all other nodes, different taints, different instance types and system reserved reservations.</p>
+
+<p><strong>NOTE</strong>: At the time of writing, the main concern about using privileged instance profiles and taints, may be due to Kubernetes not having role based access control to tolerate certain taints. Custom admissions hooks maybe a way to prevent end users from running workloads on these privileged nodes and may be explored in the future.</p>
+
+<p>As we were still on TF 0.11, creating TF Modules to handle all the configuration differences mentioned above didn&rsquo;t seem viable. We heavily use <a href="https://github.com/coveooss/gotemplate">coveo/gotemplate</a> for these scenarios as we are mostly familiar with gotemplates due to Helm.</p>
+
+<p>We decided on the following structure to capture the differences in our worker configurations:</p>
+
+<script type="application/javascript" src="//gist.github.com/so0k/b31b767c126a40a6ded6cd49d8837911.js?file=compute-workers-tf-2-data-structure.yaml"></script>
+
+<p>To generate the necessary tf resources based on a list of worker configurations, we use <a href="https://gist.github.com/so0k/b31b767c126a40a6ded6cd49d8837911#file-compute-workers-tf-2-gotemplate-tf">the following workers.tf.template</a></p>
+
+<p>We now have autoscaling groups fully managed in Terraform. The next problem is to handle rolling updates. Kops has built-in processes to cordon, drain and replace worker instances. Eksctl orchestrates this through CloudFormation as well.</p>
+
+<p>In the Terraform landscape, a great tool to roll nodes in an autoscaling group is <a href="https://github.com/palantir/bouncer">palantir/bouncer</a>. We helped add initial support for LaunchTemplates and will detail the necessary steps to integrate it for EKS workers in the following sections.</p>
+
+<h2 id="node-maintenance-autoscaling-and-lifecyclehooks">Node maintenance, Autoscaling and LifeCycleHooks</h2>
+
+<p>As hinted in the previous section, orchestrating nodes during maintenance involves several repetitive commands. Additionally, scaling events outside our control require some of these operations to be fully automated based on events.</p>
+
+<p>A great architectural pattern is to use AWS Lambda functions to handle these events:</p>
+
+<ul>
+<li>Drain nodes based SpotInstance Termination event</li>
+<li>Drain nodes based on autoscaling instance termination event</li>
+</ul>
+
+<p>The eksworkshop details how to handle spot Instance terminations by having each instance query the EC2 metadata endpoint in a loop. Alternatively, since January 2018 these events are available through <a href="https://docs.aws.amazon.com/AmazonCloudWatch/latest/events/CloudWatchEventsandEventPatterns.html">CloudWatch event rules</a> - a sample implementation is available via <a href="https://github.com/awslabs/amazon-eks-serverless-drainer">awslabs/amazon-eks-serverless-drainer</a>.</p>
+
+<p>At this stage, we discovered the <a href="https://github.com/aws-samples/amazon-eks-refarch-cloudformation">aws-samples/amazon-eks-refarch-cloudformation</a> by <a href="https://twitter.com/pahudnet">@pahudnet</a> and wish we had found it earlier.</p>
+
+<p>A lot of great work is being put into AWS CDK with an promising module for <a href="https://github.com/aws/aws-cdk/tree/master/packages/@aws-cdk/aws-eks">EKS</a> although all of this was still experimental at the time of this writing.</p>
+
+<p>As we provisioned our EKS clusters with Private APIs and had some concerns if it would be easy to use lambda in our scenario we decided instead to use <a href="https://github.com/rebuy-de/node-drainer">rebuy-de/node-drainer</a> over the more popular <code>aws-kube/node-drainer-ds</code>.</p>
+
+<p>rebuy-de/node-drainer relies on SQS to deliver ASG Instance termination events. To configure this we needed to create an SQS queue, give our system workers ability to read from the queue and configure our LifeCycleHooks to publish events to the queue.</p>
+
+<p>First we create a Queue and allow AWS Autoscaling service to publish messages to this queue</p>
+
+<script type="application/javascript" src="//gist.github.com/so0k/b31b767c126a40a6ded6cd49d8837911.js?file=lch-sqs-1.tf"></script>
+
+<p>Next, we allow our system workers IAM profile to read message from the same queue</p>
+
+<script type="application/javascript" src="//gist.github.com/so0k/b31b767c126a40a6ded6cd49d8837911.js?file=lch-sqs-2.tf"></script>
+
+<p><strong>NOTE</strong>: The above policy ensures the system workers of 1 cluster can not accidentally modify autoscaling groups from other clusters as well as ensure the rebuy-de/node-drainer has the ability to resolve instance-id to kube node-name.</p>
+
+<p>Finally, we add the sqs target arn to our workers into our template ([final template]()):</p>
+
+<script type="application/javascript" src="//gist.github.com/so0k/b31b767c126a40a6ded6cd49d8837911.js?file=compute-workers-tf-gotemplate-1.diff"></script>
+
+		</div>
+		
+<div class="post__tags tags clearfix">
+	<svg class="tags__icon icon icon-tag" width="16" height="16" viewBox="0 0 32 32"><path d="M32 19c0 1-1 2-1 2L21 31s-1 1-2 1-2-1-2-1L2 16c-1-1-1.4-2-1.4-2S0 12.5 0 11V3C0 1.5.8.8.8.8S1.5 0 3 0h8c1.5 0 3 .6 3 .6S15 1 16 2l15 15s1 1 1 2zM7 10a3 3 0 1 0 0-6 3 3 0 0 0 0 6z"/></svg>
+	<ul class="tags__list">
+		<li class="tags__item"><a class="tags__link btn" href="/tags/aws/" rel="tag">AWS</a></li>
+		<li class="tags__item"><a class="tags__link btn" href="/tags/terraform/" rel="tag">Terraform</a></li>
+		<li class="tags__item"><a class="tags__link btn" href="/tags/datadog/" rel="tag">DataDog</a></li>
+		<li class="tags__item"><a class="tags__link btn" href="/tags/kubernetes/" rel="tag">Kubernetes</a></li>
+		<li class="tags__item"><a class="tags__link btn" href="/tags/spot/" rel="tag">Spot</a></li>
+	</ul>
+</div>
+	</article>
+</main>
+
+    <div class="authorbox clearfix">
+      <figure class="authorbox__avatar">
+        <img alt="Vincent De Smet avatar" src="/img/authors/vincent-de-smet.jpeg" class="avatar" height="90" width="90">
+      </figure>
+      <div class="authorbox__header">
+        <span class="authorbox__name">
+          About Vincent De Smet
+        </span>
+      </div>
+      <div class="authorbox__description">
+        Senior DevOps in charge of the initial AWS configuration at Swatmobile. Specializes in Terraform, Kubernetes and Cloud architectures.
+      </div>
+    </div>
+
+
+<nav class="post-nav flex">
+	<div class="post-nav__item post-nav__item--prev">
+		<a class="post-nav__link" href="/posts/bootstrapping-aws/" rel="prev"><span class="post-nav__caption">«&thinsp;Previous</span><p class="post-nav__post-title">Bootstrapping your AWS account with Terraform</p></a>
+	</div>
+</nav>
+
+
+			</div>
+			
+		</div>
+		<footer class="footer">
+	<div class="container footer__container flex">
+		
+		<div class="footer__copyright">
+			&copy; 2019 Ministry of Movement Ltd.
+			<span class="footer__copyright-credits">Generated with <a href="https://gohugo.io/" rel="nofollow noopener" target="_blank">Hugo</a> and <a href="https://github.com/Vimux/Mainroad/" rel="nofollow noopener" target="_blank">Mainroad</a> theme.</span>
+		</div>
+	</div>
+</footer>
+	</div>
+<script async defer src="/js/menu.js"></script></body>
+</html>
